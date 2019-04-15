@@ -1,0 +1,45 @@
+#!/bin/bash
+# Requires: wmctrl xprop
+
+#panel number
+PANEL_NUM=1
+#alpha when no window is maximized
+PANEL_ALPHA_REGULAR=55
+#alpha when a window is maximized
+PANEL_ALPHA_MAXIMUM=90
+
+CURR=0
+
+xfconf-query -c xfce4-panel -p /panels/panel-$PANEL_NUM/background-alpha -s $PANEL_ALPHA_REGULAR
+
+while true
+do
+	MAX_FND=0
+	for w in $( wmctrl -l | cut -d' ' -f1 )
+	do 
+		if xprop -id $w | grep -E "STATE_HIDDEN" > /dev/null 2>&1
+		then
+			continue
+		fi
+
+		if xprop -id $w | grep -E "MAXIMIZED_HORZ.*MAXIMIZED_VERT" > /dev/null 2>&1
+		then
+			MAX_FND=1
+			break
+		fi
+	done
+	
+	#only change panel alpha when a window state changes
+	if [[ $MAX_FND -eq 1 && $CURR -eq 0 ]]
+	then 
+		xfconf-query -c xfce4-panel -p /panels/panel-$PANEL_NUM/background-alpha -s $PANEL_ALPHA_MAXIMUM
+		CURR=1			
+	elif [[ $MAX_FND -eq 0 && $CURR -eq 1 ]]
+	then
+		xfconf-query -c xfce4-panel -p /panels/panel-$PANEL_NUM/background-alpha -s $PANEL_ALPHA_REGULAR
+		CURR=0
+	fi
+
+	sleep 1
+done
+exit 0
